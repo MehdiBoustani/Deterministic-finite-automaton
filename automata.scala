@@ -27,34 +27,43 @@ object DFA:
                             false
                         
             helper(dfa.initialState, word)
+        
+        def adjacent(state: State): List[State] =
+            dfa.transitions.filter { case ((fromState, char), toState) =>
+                fromState == state && dfa.alphabet.contains(char)
+            }
+            .values.toList
 
-// --- Automate des chaînes binaires impaires ---
-import DFA.accept
-// Def des états
-val q0 = State("q0")
-val q1 = State("q1")
+        
+    def main(args: Array[String]): Unit = 
+        // Tester des mots
+        val states: Set[State] = Set(State("0"), State("1"), State("2"), State("3"), State("4"))
+        val alphabet: Set[Char] = Set('1', '2') // '1' pour +1 et '2' pour +2
 
-// Def des transitions
-val transitions: Transition = Map(
-    (q0, '0') -> q0, // On est pair et on tombe sur un 0, on reste pair
-    (q0, '1') -> q1, // On est pair et on tombe sur un 1, on devient impair
-    (q1, '0') -> q1, // On est impair et on tombe sur un 0, on reste impair
-    (q1, '1') -> q0 // On est impair et on tombe sur un 1, on devient pair
-)
+        val transitions: Transition = Map(
+            (State("0"), '1') -> State("1"),
+            (State("0"), '2') -> State("2"),
+            (State("1"), '1') -> State("2"),
+            (State("1"), '2') -> State("3"),
+            (State("2"), '1') -> State("3"),
+            (State("2"), '2') -> State("4"),
+            (State("3"), '1') -> State("4")
+        )
 
-// Création de l'automate pour les chaînes binaires impaires
-val binaryOddAutomata = Automata(
-    states = Set(q0, q1),
-    transitions = transitions,
-    alphabet = Set('0', '1'),
-    initialState = q0,
-    acceptedStates = Set(q1)
-)
+        val initialState: State = State("0")
+        val acceptedStates: Set[State] = Set(State("4"))
 
-// --- Tests ---
-// Test de la fonction accept avec les mots de l'énoncé
-println(binaryOddAutomata.accept(List('1', '0', '1', '0', '1', '0', '1', '1'))) // true
-println(binaryOddAutomata.accept(List('1', '0', '1', '0', '1', '0', '1', '0'))) // false
+        val automata = Automata(
+            states = states,
+            transitions = transitions,
+            alphabet = alphabet,
+            initialState = initialState,
+            acceptedStates = acceptedStates
+        )
 
-// Test avec solve
-//println(binaryOddAutomata.solve())
+        println(automata.accept(List('1', '1', '1', '1'))) // Devrait imprimer true
+        println(automata.accept(List('2', '2')))           // Devrait imprimer true
+        println(automata.accept(List('1', '2', '1')))      // Devrait imprimer true
+        println(automata.accept(List('1', '1', '2')))      // Devrait imprimer true ou false selon les transitions définies
+        println(automata.accept(List('1', '1', '1')))      // Devrait imprimer false
+        
