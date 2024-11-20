@@ -1,33 +1,41 @@
 // --- Automate des chaînes binaires impaires ---
-import DFA.accept
+import ObjectDFA._
 
-def main(args: Array[String]): Unit =
+object BinaryOddDFA:
 
-    // Def des états
-    val q0 = State("q0")
-    val q1 = State("q1")
+    // Définir les états comme des sous-types de `StateDFA`
+    case class BinaryState(name: String) extends StateDFA
 
-    // Def des transitions
-    val transitions: Transition = Map(
-        (q0, '0') -> q0, // On est pair et on tombe sur un 0, on reste pair
-        (q0, '1') -> q1, // On est pair et on tombe sur un 1, on devient impair
-        (q1, '0') -> q1, // On est impair et on tombe sur un 0, on reste impair
-        (q1, '1') -> q0 // On est impair et on tombe sur un 1, on devient pair
-    )
+    // Définir les états
+    val q0 = BinaryState("q0") // État où le nombre de `1` est pair
+    val q1 = BinaryState("q1") // État où le nombre de `1` est impair
 
-    // Création de l'automate pour les chaînes binaires impaires
-    val binaryOddAutomata = Automata(
-        states = Set(q0, q1),
-        transitions = transitions,
-        alphabet = Set('0', '1'),
-        initialState = q0,
-        acceptedStates = Set(q1)
-    )
+    // Définir les transitions pour les chaînes binaires impaires
+    case class BinaryOddDFA() extends DFA[BinaryState, Char]:
+        override def states: Set[BinaryState] = Set(q0, q1)
+        override def alphabet: Set[Symbol[Char]] = Set('0', '1')
+        override def initialState: BinaryState = q0
+        override def acceptingStates: Set[BinaryState] = Set(q1)
 
-    // --- Tests ---
-    // Test de la fonction accept avec les mots de l'énoncé
-    println(binaryOddAutomata.accept(List('1', '0', '1', '0', '1', '0', '1', '1'))) // true
-    println(binaryOddAutomata.accept(List('1', '0', '1', '0', '1', '0', '1', '0'))) // false
+        // Fonction de transition
+        override def transition(state: BinaryState, symbol: Char): Option[BinaryState] = (state, symbol) match
+            case (`q0`, '0') => Some(q0)
+            case (`q0`, '1') => Some(q1)
+            case (`q1`, '0') => Some(q1)
+            case (`q1`, '1') => Some(q0)
+            case _           => None
 
-    // Test avec solve
-    //println(binaryOddAutomata.solve())
+
+val binaryOddDFA = BinaryOddDFA.BinaryOddDFA()
+val seqWord = "110"
+println(s"Accepté ? ${binaryOddDFA.accept(seqWord)}")
+
+// Test avec solve
+println("Solutions générées par solve :")
+println(binaryOddDFA.solve())
+
+        // println(binaryOddDFA.accept(Seq('1', '0', '1', '0', '1', '0', '1', '1'))) // true
+        // println(binaryOddDFA.accept(Seq('1', '0', '1', '0', '1', '0', '1', '0'))) // false
+
+
+
