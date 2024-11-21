@@ -1,4 +1,4 @@
-// require(acceptingStates.subsetOf(states), "Accepting states must be a subset of all states.") // A VOIR SI ON DOIT UTILISER
+//require(acceptingStates.subsetOf(states), "Accepting states must be a subset of all states.") // A VOIR SI ON DOIT UTILISER
 object ObjectDFA:
 
     trait StateDFA // Defined interface for a DFA state
@@ -40,11 +40,9 @@ object ObjectDFA:
          *          false otherwise
          */
         def accept(word: Word[A]): Boolean = 
-            val finalState = word.foldLeft(Option(dfa.initialState)) ( (currentStateOpt, symbol) =>
-                currentStateOpt.flatMap(state => dfa.transition(state, symbol)))
-            finalState match 
-                case None => false
-                case Some(state) => isAccepted(state)
+            word.foldLeft(Option(dfa.initialState)) ( (currentStateOpt, symbol) =>
+                currentStateOpt.flatMap(state => dfa.transition(state, symbol))
+            ).exists(isAccepted)
 
         /* This solve method gets all possible words leading to an acyclic solution path for the DFA starting at initial state
          * Returns a list of words leading initial state to an accepting state
