@@ -23,34 +23,51 @@ object Taquin2x2 {
             TaquinState(Vector(Vector(1, 2), Vector(3, 0)), (1, 1)) // état final
         )
 
-        // Fonction de transition
         override def transition(state: TaquinState, symbol: Move): Option[TaquinState] = {
             val (x, y) = state.emptyPos
             val grid = state.grid
 
+            // Fonction pour effectuer un mouvement et retourner le nouvel état
+            def moveIfValid(newX: Int, newY: Int): Option[TaquinState] = {
+                if (newX >= 0 && newX < 2 && newY >= 0 && newY < 2) {
+                    swap(grid, (x, y), (newX, newY)) match {
+                    case Some(newGrid) => Some(TaquinState(newGrid, (newX, newY))) // Si l'échange a réussi, retourner le nouvel état
+                    case None => None // Si l'échange échoue, retourner None
+                    }
+                } else {
+                        None
+                }
+            }
+
             symbol match {
-                case Left if y > 0 => // Déplacer vers la gauche
-                    val newGrid = swap(grid, (x, y), (x, y - 1))
-                    Some(TaquinState(newGrid, (x, y - 1)))
-                case Right if y < 1 => // Déplacer vers la droite
-                    val newGrid = swap(grid, (x, y), (x, y + 1))
-                    Some(TaquinState(newGrid, (x, y + 1)))
-                case Up if x > 0 => // Déplacer vers le haut
-                    val newGrid = swap(grid, (x, y), (x - 1, y))
-                    Some(TaquinState(newGrid, (x - 1, y)))
-                case Down if x < 1 => // Déplacer vers le bas
-                    val newGrid = swap(grid, (x, y), (x + 1, y))
-                    Some(TaquinState(newGrid, (x + 1, y)))
-                case _ => None // Mouvement impossible
+                case Left  => moveIfValid(x, y - 1) // Déplacer vers la gauche
+                case Right => moveIfValid(x, y + 1) // Déplacer vers la droite
+                case Up    => moveIfValid(x - 1, y) // Déplacer vers le haut
+                case Down  => moveIfValid(x + 1, y) // Déplacer vers le bas
+                case _     => None // Mouvement impossible
             }
         }
 
-        // Fonction pour échanger deux cases de la grille
-        private def swap(grid: Vector[Vector[Int]], pos1: (Int, Int), pos2: (Int, Int)): Vector[Vector[Int]] = {
+
+        private def swap(grid: Vector[Vector[Int]], pos1: (Int, Int), pos2: (Int, Int)): Option[Vector[Vector[Int]]] = {
             val (x1, y1) = pos1
             val (x2, y2) = pos2
-            grid.updated(x1, grid(x1).updated(y1, grid(x2)(y2)))
-                .updated(x2, grid(x2).updated(y2, grid(x1)(y1)))
+            
+            if (x1 < 0 || x1 >= grid.size || y1 < 0 || y1 >= grid(0).size ||
+                x2 < 0 || x2 >= grid.size || y2 < 0 || y2 >= grid(0).size) {
+                None
+            } else {
+                // Récupérer les lignes
+                val row1 = grid(x1)
+                val row2 = grid(x2)
+
+                // Échanger les éléments dans les lignes concernées
+                val newRow1 = row1.updated(y1, row2(y2))
+                val newRow2 = row2.updated(y2, row1(y1))
+
+                // Reconstruire la grille avec les lignes mises à jour
+                Some(grid.updated(x1, newRow1).updated(x2, newRow2))
+            }
         }
     }
 }
