@@ -1,4 +1,3 @@
-//require(acceptingStates.subsetOf(states), "Accepting states must be a subset of all states.") // A VOIR SI ON DOIT UTILISER
 object ObjectDFA:
 
     trait StateDFA // Defined interface for a DFA state
@@ -16,45 +15,65 @@ object ObjectDFA:
     trait DFA[S <: StateDFA, A]: // S = state subtype of StateDFA, A = Type of the alphabet symbols
         def states: Set[S] //  Q
         def alphabet: Set[Symbol[A]] //  Σ
-        def initialState: S //  δ
-        def acceptingStates: Set[S] //  s
-        def transition(state: S, symbol: Symbol[A]): Option[S] //  F
-       
-    extension[S <: StateDFA, A](dfa: DFA[S, A])
+        def transition(state: S, symbol: Symbol[A]): Option[S] //  δ
+        def initialState: S //  s
+        def acceptingStates: Set[S] //  F (Assuming that it is a subset of states)
+        
+    extension[S <: StateDFA, A](dfa: DFA[S, A]) 
 
-        /* This getAdjacentStates method returns a set of allowed adjacent states starting from a given state 
+        /** This getAdjacentStates method returns a set of allowed adjacent states from a given state 
          * getAdjacentStates(q) = {(σ, q') ∈ Σ × Q|q' = δ(q, σ)}
+         * 
+         * @param state a state 
+         *    
+         * @return  A set of tuples where each element contains the symbol and 
+         *          the transition (new state) using the symbol      
          */ 
         def getAdjacentStates(state: S): Set[(Symbol[A], S)] = 
             dfa.alphabet.flatMap(symbol => dfa.transition(state, symbol).map(nextState => (symbol, nextState)))
 
-        /* This isAccepted method determines whether or not a given state is accepted 
-         * Returns: true if the state is accepted, 
+        /** This isAccepted method determines whether or not a given state is accepted 
+         * 
+         * @param state a state
+         *   
+         * @return  true if the state is accepted, 
          *          false otherwise
          */
         private def isAccepted(state: S): Boolean = 
             dfa.acceptingStates.contains(state)
 
-        /* This accept method determines whether or not a given word leads the DFA to an accepting state (starting at initial state s)
-         * Returns: true if the word leads to an accepting state
-         *          false otherwise
+        /** This accept method determines whether or not a given word leads the DFA to an accepting state (starting at initial state s)
+         *
+         * @param word: a word 
+         * 
+         * @return true if the word leads to an accepting state
+         *        false otherwise
          */
         def accept(word: Word[A]): Boolean = 
-            word.foldLeft(Option(dfa.initialState)) ( (currentStateOpt, symbol) =>
-                currentStateOpt.flatMap(state => dfa.transition(state, symbol))
-            ).exists(isAccepted)
-
-        /* This solve method gets all possible words leading to an acyclic solution path for the DFA starting at initial state
+            val finalState = word.foldLeft(Option(dfa.initialState)) ( (currentStateOpt, symbol) =>
+                currentStateOpt.flatMap(state => dfa.transition(state, symbol)))
+            finalState match 
+                case None => false
+                case Some(state) => isAccepted(state)
+            
+        /** This solve method gets all possible words leading to an acyclic solution path for the DFA starting at initial state
          * Returns a list of words leading initial state to an accepting state
+         * 
+         * @return List[Word[A]]: a list of words leading to a solution
          */
         def solve(): List[Word[A]] = 
-            /* This solveHelper function gets all possible words leading to solutions (acyclic paths) for a DFA starting at a given state
+            /** solveHelper function gets all possible words leading to solutions (acyclic paths) for a DFA starting at a given state
              * Returns a list of words leading a given state to an accepting state 
+             * 
+             * @param stack a list of paths in the form of tuples: (word, set of visited states, set of adjacents of the current state)
+             * @param solution current solution 
+             * 
+             * @return a list of words leading to a solution
              */
             @annotation.tailrec
             def solveHelper(stack: List[(Word[A], Set[S], Set[(Symbol[A], S)])], solution: List[Word[A]]): List[Word[A]] = stack match 
                 case Nil => solution // All paths explored, return accumulated solutions
-                case (word, visited, adjacent) :: rest =>
+                case (word, visited, adjacent) :: rest => 
                     if (adjacent.isEmpty)  // No more transitions
                         if (accept(word)) solveHelper(rest, word.reverse :: solution) // Found a solution -> add it to the list
                         else solveHelper(rest, solution) // explore other paths
@@ -80,6 +99,50 @@ object ObjectDFA:
 
             // Start with the initial state
             solveHelper(List((Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), Nil)
+
+        /** This lazySolve method gets all possible words leading to an acyclic solution path for the DFA starting at initial state
+         * Returns a lazy list of words leading initial state to an accepting state (on demand)
+         * 
+         * @return LazyList[Word[A]]: a lazy list of words leading to a solution
+         */
+        def lazySolve(): LazyList[Word[A]] = 
+            @annotation.tailrec
+            /** lazyHelper function gets all possible words leading to "on demand" solutions (acyclic paths) for a DFA starting at a given state
+             * Returns a lazy list of words leading a given state to an accepting state 
+             * 
+             * @param stack a lazy list of paths in the form of tuples: (word, set of visited states, set of adjacents of the current state)
+             * @param solution current solution 
+             * 
+             * @return a lazy list of words leading to a solution 
+             */
+            def lazyHelper(stack: LazyList[(Word[A], Set[S], Set[(Symbol[A], S)])], solution: LazyList[Word[A]]): LazyList[Word[A]] = stack match 
+                case LazyList() => solution
+                case (word, visited, adjacent) #:: rest => 
+                    if (adjacent.isEmpty)
+                        if (accept(word)) lazyHelper(rest, word.reverse #:: solution)
+
+                        else lazyHelper(rest, solution)
+
+                    else 
+                        val (symbol, newState) = adjacent.head
+                        val remainingAdjacent = adjacent.tail
+                        
+                        if (visited.contains(newState)) 
+                            lazyHelper((word, visited, remainingAdjacent) #:: rest, solution)
+
+                        else 
+                            val newWord = symbol +: word
+                            val newVisited = visited + newState
+                            val newAdjacent = getAdjacentStates(newState)
+
+                            lazyHelper(
+                                (word, visited, remainingAdjacent) #:: 
+                                (newWord, newVisited, newAdjacent) #:: 
+                                rest, 
+                                solution
+                            )
+
+            lazyHelper(LazyList((Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), LazyList.empty)
 
 /* 
  Explication de la fonction solve: elle prend 2 arguments :
