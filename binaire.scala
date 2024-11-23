@@ -24,18 +24,4 @@ object BinaryOddDFA:
             case (`q1`, '0') => Some(q1)
             case (`q1`, '1') => Some(q0)
             case _           => None
-
-
-val binaryOddDFA = BinaryOddDFA.BinaryOddDFA()
-val seqWord = "110"
-println(s"Accepté ? ${binaryOddDFA.accept(seqWord)}")
-
-// Test avec solve
-println("Solutions générées par solve :")
-println(binaryOddDFA.solve())
-
-        // println(binaryOddDFA.accept(Seq('1', '0', '1', '0', '1', '0', '1', '1'))) // true
-        // println(binaryOddDFA.accept(Seq('1', '0', '1', '0', '1', '0', '1', '0'))) // false
-
-
-
+            

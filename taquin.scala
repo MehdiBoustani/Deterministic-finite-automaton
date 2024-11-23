@@ -1,75 +1,102 @@
-object Taquin2x2 {
+import scala.util.Random
+import ObjectDFA._
 
-    // Définitions des mouvements possibles
-    trait Move
-    case object Left extends Move
-    case object Right extends Move
-    case object Up extends Move
-    case object Down extends Move
 
-    case class TaquinState(grid: Vector[Vector[Int]], emptyPos: (Int, Int)) extends ObjectDFA.StateDFA
+object Taquin {
+    // Redéfinition de Grid comme une liste simple d'entiers
+    type Grid = List[Int]
 
-    class TaquinDFA(val initialState: TaquinState) extends DFA[TaquinState, Move] {
+    // Définition des mouvements dans un Map associant chaque direction à un déplacement en index
+    val moves: Map[Char, Int] = Map(
+        'l' -> -1,  // Left : déplace vers la gauche
+        'r' -> 1,   // Right : déplace vers la droite
+        'u' -> -2,  // Up : déplace vers le haut (grille 2x2)
+        'd' -> 2    // Down : déplace vers le bas (grille 2x2)
+    )
+
+    case class TaquinState(grid: Grid) extends ObjectDFA.StateDFA {
+        lazy val emptyPos: Int = grid.indexOf(0)
+    }
+
+    class TaquinDFA(val initialState: TaquinState) extends DFA[TaquinState, Char] {
+
         // Générer tous les états possibles pour un Taquin 2x2
         override def states: Set[TaquinState] = {
-            // j'y arrive pas :(
+            def generateAllStates(currentStates: Set[TaquinState]): Set[TaquinState] = {
+                val newStates = currentStates.flatMap { state =>
+                    moves.keys.flatMap { move =>
+                        transition(state, move)
+                    }
+                }
+
+                if (newStates.subsetOf(currentStates)) currentStates
+                else generateAllStates(currentStates ++ newStates)
+            }
+
+            generateAllStates(Set(initialState))
         }
 
-        // Alphabet
-        override def alphabet: Set[Move] = Set(Left, Right, Up, Down)
+        // Alphabet des mouvements (basé sur les clés du Map)
+        override def alphabet: Set[Char] = moves.keySet
 
         // États acceptants : quand le puzzle est résolu
         override def acceptingStates: Set[TaquinState] = Set(
-            TaquinState(Vector(Vector(1, 2), Vector(3, 0)), (1, 1)) // état final
+            TaquinState(List(1, 2, 3, 0))
         )
 
-        override def transition(state: TaquinState, symbol: Move): Option[TaquinState] = {
-            val (x, y) = state.emptyPos
+        // Transition entre les états
+        override def transition(state: TaquinState, symbol: Char): Option[TaquinState] = {
+            val emptyPos = state.emptyPos
             val grid = state.grid
 
-            // Fonction pour effectuer un mouvement et retourner le nouvel état
-            def moveIfValid(newX: Int, newY: Int): Option[TaquinState] = {
-                if (newX >= 0 && newX < 2 && newY >= 0 && newY < 2) {
-                    swap(grid, (x, y), (newX, newY)) match {
-                    case Some(newGrid) => Some(TaquinState(newGrid, (newX, newY))) // Si l'échange a réussi, retourner le nouvel état
-                    case None => None // Si l'échange échoue, retourner None
-                    }
-                } else {
-                        None
-                }
-            }
-
-            symbol match {
-                case Left  => moveIfValid(x, y - 1) // Déplacer vers la gauche
-                case Right => moveIfValid(x, y + 1) // Déplacer vers la droite
-                case Up    => moveIfValid(x - 1, y) // Déplacer vers le haut
-                case Down  => moveIfValid(x + 1, y) // Déplacer vers le bas
-                case _     => None // Mouvement impossible
+            // Vérifier si le symbole est valide et récupérer l'offset correspondant
+            moves.get(symbol).flatMap { offset =>
+                val newPos = emptyPos + offset
+                
+                // Vérifier si le mouvement est valide (ne traverse pas les bords)
+                if (isValidMove(emptyPos, newPos)) {
+                    swap(grid, emptyPos, newPos).map(TaquinState.apply)
+                } else None
             }
         }
 
+        // Fonction pour échanger les éléments dans la grille
+        private def swap(grid: Grid, pos1: Int, pos2: Int): Option[Grid] = {
+            if (pos1 >= 0 && pos1 < grid.length && pos2 >= 0 && pos2 < grid.length) {
+                val newGrid = grid.updated(pos1, grid(pos2)).updated(pos2, grid(pos1))
+                Some(newGrid)
+            } else None
+        }
 
-        private def swap(grid: Vector[Vector[Int]], pos1: (Int, Int), pos2: (Int, Int)): Option[Vector[Vector[Int]]] = {
-            val (x1, y1) = pos1
-            val (x2, y2) = pos2
+        // Vérifie si un mouvement est valide (ne traverse pas les bords de la grille)
+        private def isValidMove(currentPos: Int, newPos: Int): Boolean = {
+            if (newPos < 0 || newPos >= 4) return false  // Hors limites
             
-            if (x1 < 0 || x1 >= grid.size || y1 < 0 || y1 >= grid(0).size ||
-                x2 < 0 || x2 >= grid.size || y2 < 0 || y2 >= grid(0).size) {
-                None
-            } else {
-                // Récupérer les lignes
-                val row1 = grid(x1)
-                val row2 = grid(x2)
-
-                // Échanger les éléments dans les lignes concernées
-                val newRow1 = row1.updated(y1, row2(y2))
-                val newRow2 = row2.updated(y2, row1(y1))
-
-                // Reconstruire la grille avec les lignes mises à jour
-                Some(grid.updated(x1, newRow1).updated(x2, newRow2))
-            }
+            val currentRow = currentPos / 2
+            val currentCol = currentPos % 2
+            val newRow = newPos / 2
+            val newCol = newPos % 2
+            
+            // Vérifie que le mouvement ne traverse pas les bords
+            (currentRow - newRow).abs + (currentCol - newCol).abs == 1
         }
     }
+
+    // Exemple d'utilisation
+    def main(args: Array[String]): Unit = {
+        val initialState = TaquinState(List(0, 2, 1, 3))
+        val dfa = new TaquinDFA(initialState)
+
+        // Affichage de l'état initial
+        println(s"État initial : ${initialState.grid}")
+
+        // Appel de la méthode solve pour obtenir les chemins vers un état accepteur
+        val solutions = dfa.solve()
+
+        // Affichage des solutions trouvées
+        println("Solutions trouvées :")
+        solutions.foreach(solution => println(solution.mkString(" ")))
+
+        println(s"Félicitations ! Vous avez résolu le puzzle : ${initialState.grid}")
+    }
 }
-//Tests
-import Taquin2x2._
