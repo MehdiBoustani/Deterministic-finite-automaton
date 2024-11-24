@@ -65,41 +65,50 @@ object ObjectDFA:
             /** solveHelper function gets all possible words leading to solutions (acyclic paths) for a DFA starting at a given state
              * Returns a list of words leading a given state to an accepting state 
              * 
-             * @param stack a list of paths in the form of tuples: (word, set of visited states, set of adjacents of the current state)
+             * @param stack a list of paths in the form of tuples: (current state, word, set of visited states, set of adjacents of the current state)
              * @param solution current solution 
              * 
              * @return a list of words leading to a solution
              */
             @annotation.tailrec
-            def solveHelper(stack: List[(Word[A], Set[S], Set[(Symbol[A], S)])], solution: List[Word[A]]): List[Word[A]] = stack match 
-                case Nil => solution // All paths explored, return accumulated solutions
-                case (word, visited, adjacent) :: rest => 
-                    if (adjacent.isEmpty)  // No more transitions
-                        val reversedWord = word.reverse
-                        if (accept(reversedWord)) solveHelper(rest, reversedWord :: solution) // Found a solution -> add it to the list
-                        else solveHelper(rest, solution) // explore other paths
+            def solveHelper(stack: List[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: List[Word[A]]): List[Word[A]] = stack match 
+                case Nil => solution // All paths explored, return solutions
+                case (currentState, word, visited, adjacent) :: rest => 
+                    if (adjacent.isEmpty)  // No more transitions 
+
+                        // We can check if the word is accepted : efficiency: we have to recompute transitions, which is not too efficient
+                        // reversedWord = word.reverse
+                        // if (accept(reversedWord)) solveHelper(rest, reversedWord :: solution) // Add the accepted word to solution
+
+                        // Check if the current state is an accepting state : We are using this one for more efficiency ! 
+                        if (isAccepted(currentState)) solveHelper(rest, word.reverse :: solution) // Add the word leading to this accepting state
+                        else solveHelper(rest, solution) // Explore other paths
+
                     else 
-                        val (symbol, newState) = adjacent.head
+                        // Explore the next transition
+                        val (symbol, nextState) = adjacent.head
                         val remainingAdjacent = adjacent.tail
 
-                        if (visited.contains(newState)) 
+                        if (visited.contains(nextState)) 
                             // Skip already visited states
-                            solveHelper((word, visited, remainingAdjacent) :: rest, solution)
+                            solveHelper((currentState, word, visited, remainingAdjacent) :: rest, solution)
                         else 
+                            // Build the new state
                             val newWord = symbol +: word
-                            val newVisited = visited + newState
-                            val newAdjacent = getAdjacentStates(newState)
+                            val newVisited = visited + nextState
+                            val newAdjacent = getAdjacentStates(nextState)
 
                             // Add new state exploration to stack
                             solveHelper(
-                                (word, visited, remainingAdjacent) :: 
-                                (newWord, newVisited, newAdjacent) :: 
+                                (currentState, word, visited, remainingAdjacent) :: 
+                                (nextState, newWord, newVisited, newAdjacent) :: 
                                 rest, 
                                 solution
                             )
+                        
 
             // Start with the initial state
-            solveHelper(List((Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), Nil)
+            solveHelper(List((dfa.initialState, Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), Nil)
 
         /** This lazySolve method gets all possible words leading to an acyclic solution path for the DFA starting at initial state
          * Returns a lazy list of words leading initial state to an accepting state (on demand)
@@ -111,18 +120,22 @@ object ObjectDFA:
             /** lazyHelper function gets all possible words leading to "on demand" solutions (acyclic paths) for a DFA starting at a given state
              * Returns a lazy list of words leading a given state to an accepting state 
              * 
-             * @param stack a lazy list of paths in the form of tuples: (word, set of visited states, set of adjacents of the current state)
+             * @param stack a lazy list of paths in the form of tuples: (current state, word, set of visited states, set of adjacents of the current state)
              * @param solution current solution 
              * 
              * @return a lazy list of words leading to a solution 
              */
-            def lazyHelper(stack: LazyList[(Word[A], Set[S], Set[(Symbol[A], S)])], solution: LazyList[Word[A]]): LazyList[Word[A]] = stack match 
+            def lazyHelper(stack: LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: LazyList[Word[A]]): LazyList[Word[A]] = stack match 
                 case LazyList() => solution
-                case (word, visited, adjacent) #:: rest => 
+                case (currentState, word, visited, adjacent) #:: rest => 
                     if (adjacent.isEmpty)
-                        val reversedWord = word.reverse
-                        if (accept(reversedWord)) lazyHelper(rest, reversedWord #:: solution) // Found a solution -> add it to the list
 
+                        // Same here, we can check if the word is accepted. Efficiency: we have to recompute transitions, which is not too efficient
+                        // val reversedWord = word.reverse
+                        // if (accept(reversedWord)) lazyHelper(rest, reversedWord #:: solution)
+
+                        // Check if the current state is an accepting state : We are using this one for more efficiency ! 
+                        if (isAccepted(currentState)) lazyHelper(rest, word.reverse #:: solution) // Add the word leading to this accepting state
                         else lazyHelper(rest, solution)
 
                     else 
@@ -130,7 +143,7 @@ object ObjectDFA:
                         val remainingAdjacent = adjacent.tail
                         
                         if (visited.contains(newState)) 
-                            lazyHelper((word, visited, remainingAdjacent) #:: rest, solution)
+                            lazyHelper((currentState, word, visited, remainingAdjacent) #:: rest, solution)
 
                         else 
                             val newWord = symbol +: word
@@ -138,13 +151,13 @@ object ObjectDFA:
                             val newAdjacent = getAdjacentStates(newState)
 
                             lazyHelper(
-                                (word, visited, remainingAdjacent) #:: 
-                                (newWord, newVisited, newAdjacent) #:: 
+                                (currentState, word, visited, remainingAdjacent) #:: 
+                                (newState, newWord, newVisited, newAdjacent) #:: 
                                 rest, 
                                 solution
                             )
 
-            lazyHelper(LazyList((Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), LazyList.empty)
+            lazyHelper(LazyList((dfa.initialState, Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), LazyList.empty)
 
 /* 
  Explication de la fonction solve: elle prend 2 arguments :
