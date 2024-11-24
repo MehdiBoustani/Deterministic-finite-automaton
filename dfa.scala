@@ -75,7 +75,7 @@ object ObjectDFA:
                 case Nil => solution // All paths explored, return accumulated solutions
                 case (word, visited, adjacent) :: rest => 
                     if (adjacent.isEmpty)  // No more transitions
-                        if (accept(word)) solveHelper(rest, word.reverse :: solution) // Found a solution -> add it to the list
+                        if (accept(word)) solveHelper(rest, word :: solution) // Found a solution -> add it to the list
                         else solveHelper(rest, solution) // explore other paths
                     else 
                         val (symbol, newState) = adjacent.head
@@ -119,7 +119,7 @@ object ObjectDFA:
                 case LazyList() => solution
                 case (word, visited, adjacent) #:: rest => 
                     if (adjacent.isEmpty)
-                        if (accept(word)) lazyHelper(rest, word.reverse #:: solution)
+                        if (accept(word)) lazyHelper(rest, word #:: solution)
 
                         else lazyHelper(rest, solution)
 

@@ -4,25 +4,23 @@ import ObjectDFA._
 object Taquin {
     type Grid = List[Int]
 
-    private def calculateSize(grid: Grid): Int = {
+    def calculateSize(grid: Grid): Int = {
         Math.sqrt(grid.length).toInt
     }
 
     private def getMoves(grid: Grid): Map[Char, Int] = {
         val size = calculateSize(grid)
         Map(
-           
-            'u' -> -size,  // Up
-            'd' -> size,    // Down
-            'l' -> -1,     // Left
             'r' -> 1,      // Right
+            'l' -> -1,     // Left
+            'u' -> -size,  // Up
+            'd' -> size    // Down
         )
     }
 
     case class TaquinState(grid: Grid) extends ObjectDFA.StateDFA {
         lazy val emptyPos: Int = grid.indexOf(0)
         
-        // Redéfinition de equals et hashCode pour assurer une comparaison correcte des états
         override def equals(that: Any): Boolean = that match {
             case other: TaquinState => grid == other.grid
             case _ => false
@@ -42,11 +40,10 @@ object Taquin {
                         transition(state, move)
                     }
                 }
-
+                
                 if (newStates.subsetOf(currentStates)) currentStates
                 else generateAllStates(currentStates ++ newStates)
             }
-
             generateAllStates(Set(initialState))
         }
 
@@ -60,18 +57,20 @@ object Taquin {
         override def transition(state: TaquinState, symbol: Char): Option[TaquinState] = {
             val emptyPos = state.emptyPos
             
-            moves.get(symbol).flatMap { offset =>
-                val newPos = emptyPos + offset
-                
-                // On vérifie si le mouvement est valide ET on utilise la nouvelle position
-                if (isValidMove(symbol, emptyPos)) {
+            // D'abord vérifier si le mouvement est valide
+            if (isValidMove(symbol, emptyPos)) {
+                // Ensuite calculer la nouvelle position
+                moves.get(symbol).flatMap { offset =>
+                    val newPos = emptyPos + offset
                     swap(state.grid, emptyPos, newPos).map(TaquinState.apply)
-                } else None
-            }
+                }
+            } else None
         }
 
         private def swap(grid: Grid, pos1: Int, pos2: Int): Option[Grid] = {
-            Some(grid.updated(pos1, grid(pos2)).updated(pos2, grid(pos1)))
+            if (pos1 >= 0 && pos1 < grid.length && pos2 >= 0 && pos2 < grid.length) {
+                Some(grid.updated(pos1, grid(pos2)).updated(pos2, grid(pos1)))
+            } else None
         }
 
         private def isValidMove(symbol: Char, emptyPos: Int): Boolean = {
@@ -79,10 +78,10 @@ object Taquin {
             val col = emptyPos % size
 
             symbol match {
-                case 'l' => col > 0
-                case 'r' => col < size - 1
-                case 'u' => row > 0
-                case 'd' => row < size - 1
+                case 'r' => col < size - 1  // Peut se déplacer vers la droite
+                case 'l' => col > 0         // Peut se déplacer vers la gauche
+                case 'u' => row > 0         // Peut se déplacer vers le haut
+                case 'd' => row < size - 1  // Peut se déplacer vers le bas
                 case _ => false
             }
         }
@@ -92,12 +91,27 @@ object Taquin {
         val initialState = TaquinState(List(0, 2, 1, 3))
         val dfa = new TaquinDFA(initialState)
 
-        // Pour l'affichage, on calcule la taille
+        println(s"État initial :")
         val size = calculateSize(initialState.grid)
-        println(s"État initial : ${initialState.grid.grouped(size).toList.mkString("\n")}")
+        println(initialState.grid.grouped(size).map(_.mkString(" ")).mkString("\n"))
 
         val solutions = dfa.solve()
+
         println("Solutions trouvées :")
-        solutions.foreach(solution => println(solution.mkString(" ")))
+        if (solutions.isEmpty) {
+            println("Aucune solution trouvée.")
+        } else {
+            solutions.foreach { solution =>
+                // Afficher chaque solution brute
+                println(solution.mkString(" "))
+                
+                // Afficher le résultat de l'acceptation de chaque solution
+                val moveSequence = solution.mkString("")  // Convertir la solution en une chaîne de mouvements
+                println(s"Résultat pour ${moveSequence}: ${dfa.accept(moveSequence)}")
+            }
+        }
+
+        println(s"Résultat  : ${dfa.accept("rd")}")
     }
+
 }
