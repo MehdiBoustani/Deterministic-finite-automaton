@@ -95,7 +95,7 @@ object Taquin {
         val size = calculateSize(initialState.grid)
         println(initialState.grid.grouped(size).map(_.mkString(" ")).mkString("\n"))
 
-        val solutions = dfa.solve()
+        val solutions = dfa.solve() 
 
         println("Solutions trouvées :")
         if (solutions.isEmpty) {
