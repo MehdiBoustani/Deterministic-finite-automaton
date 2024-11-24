@@ -7,21 +7,21 @@ object BinaryOddDFA:
     case class BinaryState(name: String) extends StateDFA
 
     // Définir les états
-    val q0 = BinaryState("q0") // État où le nombre de `1` est pair
-    val q1 = BinaryState("q1") // État où le nombre de `1` est impair
+    val even = BinaryState("even") // État où le nombre de `1` est pair
+    val odd = BinaryState("odd") // État où le nombre de `1` est impair
 
     // Définir les transitions pour les chaînes binaires impaires
     case class BinaryOddDFA() extends DFA[BinaryState, Char]:
-        override def states: Set[BinaryState] = Set(q0, q1)
+        override def states: Set[BinaryState] = Set(even, odd)
         override def alphabet: Set[Symbol[Char]] = Set('0', '1')
-        override def initialState: BinaryState = q0
-        override def acceptingStates: Set[BinaryState] = Set(q1)
+        override def initialState: BinaryState = even
+        override def acceptingStates: Set[BinaryState] = Set(odd)
 
         // Fonction de transition
         override def transition(state: BinaryState, symbol: Char): Option[BinaryState] = (state, symbol) match
-            case (`q0`, '0') => Some(q0)
-            case (`q0`, '1') => Some(q1)
-            case (`q1`, '0') => Some(q1)
-            case (`q1`, '1') => Some(q0)
+            case (`even`, '0') => Some(even)
+            case (`even`, '1') => Some(odd)
+            case (`odd`, '0') => Some(odd)
+            case (`odd`, '1') => Some(even)
             case _           => None
             
