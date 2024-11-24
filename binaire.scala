@@ -24,4 +24,27 @@ object BinaryOddDFA:
             case (`odd`, '0') => Some(odd)
             case (`odd`, '1') => Some(even)
             case _           => None
-            
+        
+    def main(args: Array[String]): Unit = {
+        val dfa = new BinaryOddDFA()
+
+        println(s"État initial :")
+
+        val solutions = dfa.solve() 
+
+        println("Solutions trouvées :")
+        if (solutions.isEmpty) {
+            println("Aucune solution trouvée.")
+        } else {
+            solutions.foreach { solution =>
+                // Afficher chaque solution brute
+                println(solution.mkString(" "))
+                
+                // Afficher le résultat de l'acceptation de chaque solution
+                val moveSequence = solution.mkString("")  // Convertir la solution en une chaîne de mouvements
+                println(s"Résultat pour ${moveSequence}: ${dfa.accept(moveSequence)}")
+            }
+        }
+
+        println(s"Résultat  : ${dfa.accept("01011")}")
+    }

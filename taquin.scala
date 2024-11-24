@@ -18,7 +18,7 @@ object Taquin {
         )
     }
 
-    case class TaquinState(grid: Grid) extends ObjectDFA.StateDFA {
+    case class TaquinState(grid: Grid) extends StateDFA {
         lazy val emptyPos: Int = grid.indexOf(0)
         
         override def equals(that: Any): Boolean = that match {
@@ -88,7 +88,7 @@ object Taquin {
     }
 
     def main(args: Array[String]): Unit = {
-        val initialState = TaquinState(List(0, 2, 1, 3))
+        val initialState = TaquinState(List(2, 1, 3, 0))
         val dfa = new TaquinDFA(initialState)
 
         println(s"État initial :")
