@@ -100,8 +100,8 @@ object ObjectDFA:
 
                             // Add new state exploration to stack
                             solveHelper(
-                                (currentState, word, visited, remainingAdjacent) :: 
                                 (nextState, newWord, newVisited, newAdjacent) :: 
+                                (currentState, word, visited, remainingAdjacent) :: 
                                 rest, 
                                 solution
                             )
@@ -151,13 +151,38 @@ object ObjectDFA:
                             val newAdjacent = getAdjacentStates(newState)
 
                             lazyHelper(
-                                (currentState, word, visited, remainingAdjacent) #:: 
                                 (newState, newWord, newVisited, newAdjacent) #:: 
+                                (currentState, word, visited, remainingAdjacent) #:: 
                                 rest, 
                                 solution
                             )
 
             lazyHelper(LazyList((dfa.initialState, Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), LazyList.empty)
+
+        // solve heuristique -- ! n'est pas 100% correct car mauvaise utilisation de lazylist !
+        def heuristicSolve(heuristic: S => Double): LazyList[Word[A]] = 
+            @annotation.tailrec
+            def heuristicHelper(paths: LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: LazyList[Word[A]]): LazyList[Word[A]] = paths match
+                case LazyList() => solution
+                case (currentState, word, visited, adjacent) #:: rest => 
+ 
+                    if (isAccepted(currentState)) {println("found solution"); heuristicHelper(rest, word.reverse #:: solution)} // génère toutes les solutions
+                    // if (isAccepted(currentState)) {println("found solution");  word.reverse #:: solution} // pour une seule solution
+                    else 
+                        if (adjacent.isEmpty)
+                            heuristicHelper(rest, solution)
+                        else 
+                            val newAdjacent = adjacent.filterNot((adjSymb, adjState) => visited.contains(adjState)) // exclure les etats visités
+
+                            if (newAdjacent.isEmpty) heuristicHelper(rest, solution)
+                            else 
+                                val (newSymbol, newState) = newAdjacent.minBy { case (_, nextState) => heuristic(nextState) } // choisir l'etat avec le cout minimum
+                                val newPaths = (newState, newSymbol +: word, visited + newState, getAdjacentStates(newState)) #:: // ajouter un nouveau chemin
+                                ((currentState, word, visited, adjacent - ((newSymbol, newState))) #:: rest)
+
+                                heuristicHelper(newPaths, solution)
+
+            heuristicHelper(LazyList((dfa.initialState, Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), LazyList()) // appel initial
 
 /* 
  Explication de la fonction solve: elle prend 2 arguments :

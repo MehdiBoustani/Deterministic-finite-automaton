@@ -131,6 +131,36 @@ object Taquin {
                 case _ => false
             }
         }
+
+        /** Heuristic function h1: Counts the number of misplaced tiles.
+         *
+         * @param state The current state of the puzzle.
+         * @return The number of tiles that are not in their goal position.
+         */
+        def h1(state: TaquinState): Double = {
+            val goalGrid = acceptingStates.head.grid
+            state.grid.zip(goalGrid).count { case (currentTile, goalTile) =>
+                currentTile != goalTile
+            }.toDouble
+        }
+
+        def h2(state: TaquinState): Double = {
+            val goalGrid = acceptingStates.head.grid
+
+            state.grid.zipWithIndex.foldLeft(0.0) { case (accumDist, (tile, currentIndex)) =>
+                // Calculate the row and column of the tile in the current and goal grid
+                val goalIndex = goalGrid.indexOf(tile)
+                val currentRow = currentIndex / size
+                val currentCol = currentIndex % size
+                val goalRow = goalIndex / size
+                val goalCol = goalIndex % size
+
+                // Calculate the Manhattan distance for the tile
+                val dist = Math.abs(currentRow - goalRow) + Math.abs(currentCol - goalCol)
+                accumDist + dist
+            }
+        }
+
     }
     /**
       * Main entry point of the application.
