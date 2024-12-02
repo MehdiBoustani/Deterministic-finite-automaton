@@ -65,145 +65,149 @@ object ObjectDFA:
             /** solveHelper function gets all possible words leading to solutions (acyclic paths) for a DFA starting at a given state
              * Returns a list of words leading a given state to an accepting state 
              * 
-             * @param stack a list of paths in the form of tuples: (current state, word, set of visited states, set of adjacents of the current state)
+             * @param paths A list of paths, where each path is represented as a tuple:
+             *              - S: The current state in the DFA.
+             *              - Word[A]: The word leading to the current state.
+             *              - Set[S]: The set of states visited so far
+             *              - Set[(Symbol[A], S)]: The set of adjacent transitions from the current state.
              * @param solution current solution 
              * 
-             * @return a list of words leading to a solution
+             * @return List[Word[A]]: a list of words leading to a solution
              */
             @annotation.tailrec
-            def solveHelper(stack: List[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: List[Word[A]]): List[Word[A]] = stack match 
+            def solveHelper(path: List[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: List[Word[A]]): List[Word[A]] = path match 
                 case Nil => solution // All paths explored, return solutions
                 case (currentState, word, visited, adjacent) :: rest => 
-                    if (adjacent.isEmpty)  // No more transitions 
+                    
+                    // We can check if the word is accepted : efficiency: we have to recompute transitions, which is not too efficient
+                    // reversedWord = word.reverse
+                    // if (accept(reversedWord)) solveHelper(rest, reversedWord :: solution) // Add the accepted word to solution
 
-                        // We can check if the word is accepted : efficiency: we have to recompute transitions, which is not too efficient
-                        // reversedWord = word.reverse
-                        // if (accept(reversedWord)) solveHelper(rest, reversedWord :: solution) // Add the accepted word to solution
-
-                        // Check if the current state is an accepting state : We are using this one for more efficiency ! 
-                        if (isAccepted(currentState)) solveHelper(rest, word.reverse :: solution) // Add the word leading to this accepting state
-                        else solveHelper(rest, solution) // Explore other paths
-
+                    // Check if the current state is an accepting state : We are using this one for more efficiency ! 
+                    if (isAccepted(currentState)) solveHelper(rest, word.reverse :: solution) // Add the word leading to this accepting state
                     else 
-                        // Explore the next transition
-                        val (symbol, nextState) = adjacent.head
-                        val remainingAdjacent = adjacent.tail
+                        // remove visited states
+                        val nonVisitedAdjacents = adjacent.filterNot((_, adjState) => visited.contains(adjState)) 
 
-                        if (visited.contains(nextState)) 
-                            // Skip already visited states
-                            solveHelper((currentState, word, visited, remainingAdjacent) :: rest, solution)
+                        if (nonVisitedAdjacents.isEmpty) solveHelper(rest, solution) // no more transitions -> explore other paths
                         else 
-                            // Build the new state
-                            val newWord = symbol +: word
-                            val newVisited = visited + nextState
-                            val newAdjacent = getAdjacentStates(nextState)
+                            // Explore the next transition
+                            val (symbol, nextState) = nonVisitedAdjacents.head // take a valid adjacent for a new state
+                            val remainingAdjacent = nonVisitedAdjacents.tail
 
-                            // Add new state exploration to stack
+                            // Add new path to explore
                             solveHelper(
-                                (nextState, newWord, newVisited, newAdjacent) :: 
-                                (currentState, word, visited, remainingAdjacent) :: 
-                                rest, 
+                                (nextState, symbol +: word, visited + nextState, getAdjacentStates(nextState)) :: // new state path
+                                (currentState, word, visited, remainingAdjacent) :: // last state path 
+                                rest, // other paths
                                 solution
                             )
-                        
-
+                            
             // Start with the initial state
             solveHelper(List((dfa.initialState, Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), Nil)
 
-        /** This lazySolve method gets all possible words leading to an acyclic solution path for the DFA starting at initial state
-         * Returns a lazy list of words leading initial state to an accepting state (on demand)
-         * 
-         * @return LazyList[Word[A]]: a lazy list of words leading to a solution
+        /** This lazySolve method computes "on-demand" solution paths (acyclic paths leading to accepting states) 
+         * for the DFA starting from the initial state. It generates a lazy list of words corresponding to these paths.
+         *
+         * @return LazyList[Word[A]]: A lazy list of words, each representing a valid sequence of symbols that leads 
+         *                            the DFA from the initial state to an accepting state.
          */
         def lazySolve(): LazyList[Word[A]] = 
-            @annotation.tailrec
-            /** lazyHelper function gets all possible words leading to "on demand" solutions (acyclic paths) for a DFA starting at a given state
-             * Returns a lazy list of words leading a given state to an accepting state 
+             /** The lazyHelper function generates "on-demand" words leading to accepting states for the DFA.
+             *
+             * @param paths A LazyList of paths, where each path is represented as a tuple:
+             *              - (S): The current state in the DFA.
+             *              - (Word[A]): The word leading to the current state.
+             *              - (Set[S]): The set of states visited so far
+             *              - (Set[(Symbol[A], S)]): The set of adjacent transitions from the current state.
              * 
-             * @param stack a lazy list of paths in the form of tuples: (current state, word, set of visited states, set of adjacents of the current state)
-             * @param solution current solution 
-             * 
-             * @return a lazy list of words leading to a solution 
+             * @return Option[(Word[A], List[(S, Word[A], Set[S], Set[(Symbol[A], S)])])]: An optional tuple containing:
+             *         - The word leading to an accepting state (if found).
+             *         - The updated list of remaining paths to explore.
+             *         Returns `None` if no accepting state is found.
              */
-            def lazyHelper(stack: LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: LazyList[Word[A]]): LazyList[Word[A]] = stack match 
-                case LazyList() => solution
+            @annotation.tailrec
+            def lazyHelper(paths: LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])]): Option[(Word[A], LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])])] = paths match
+                case LazyList() => None
                 case (currentState, word, visited, adjacent) #:: rest => 
-                    if (adjacent.isEmpty)
-
-                        // Same here, we can check if the word is accepted. Efficiency: we have to recompute transitions, which is not too efficient
-                        // val reversedWord = word.reverse
-                        // if (accept(reversedWord)) lazyHelper(rest, reversedWord #:: solution)
-
-                        // Check if the current state is an accepting state : We are using this one for more efficiency ! 
-                        if (isAccepted(currentState)) lazyHelper(rest, word.reverse #:: solution) // Add the word leading to this accepting state
-                        else lazyHelper(rest, solution)
-
+                    if (isAccepted(currentState)) Some((word.reverse, rest)) // goal reached
                     else 
-                        val (symbol, newState) = adjacent.head
-                        val remainingAdjacent = adjacent.tail
-                        
-                        if (visited.contains(newState)) 
-                            lazyHelper((currentState, word, visited, remainingAdjacent) #:: rest, solution)
+                        // exclude visited states
+                        val nonVisitedAdjacents = adjacent.filterNot((_, adjState) => visited.contains(adjState))
 
+                        if (nonVisitedAdjacents.isEmpty) lazyHelper(rest) // no adjacent states (i.e no more transitions) -> explore other paths
                         else 
-                            val newWord = symbol +: word
-                            val newVisited = visited + newState
-                            val newAdjacent = getAdjacentStates(newState)
+                            val (symbol, nextState) = nonVisitedAdjacents.head // take a valid adjacent for a new state
+                            val remainingAdjacents = nonVisitedAdjacents.tail 
 
                             lazyHelper(
-                                (newState, newWord, newVisited, newAdjacent) #:: 
-                                (currentState, word, visited, remainingAdjacent) #:: 
-                                rest, 
-                                solution
-                            )
+                                       (nextState, symbol +: word, visited + nextState, getAdjacentStates(nextState)) #:: // new state path 
+                                       (currentState, word, visited, remainingAdjacents) #::  // last state path -> explore other adjacent states
+                                        rest // other paths
+                                      )
 
-            lazyHelper(LazyList((dfa.initialState, Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), LazyList.empty)
-
-        // solve heuristique -- ! n'est pas 100% correct car mauvaise utilisation de lazylist !
+            LazyList.unfold(LazyList((dfa.initialState, Seq.empty[Symbol[A]], Set(dfa.initialState), getAdjacentStates(dfa.initialState)))) { paths => lazyHelper(paths)}
+        
+        /** this heuristicSolve method computes solution paths "on demand" for the DFA starting from the initial state
+         *   using a heuristic-driven approach, generating a lazy list of words leading to accepting states,
+         *       prioritizing paths with lower heuristic costs
+         * 
+         * @param heuristic A function (S => Double) that computes the cost of a given state
+         * 
+         * @return LazyList[Word[A]]: A lazy list of words, leading to an accepting state
+         *                             guided by the heuristic.
+         */
         def heuristicSolve(heuristic: S => Double): LazyList[Word[A]] = 
+            /** This heuristicHelper function gets the word (if exists) with lowest heuristic cost
+             *   leading to an accepting state without cycles
+             * 
+             * @param paths A LazyList of paths to explore, where each path is represented as a tuple:
+             *              - S: The current state in the DFA.
+             *              - Word[A]: The sequence of symbols leading to the current state.
+             *              - Set[S]: The set of states visited so far, to prevent revisiting and cycles.
+             *              - Set[(Symbol[A], S)]: The set of adjacent transitions from the current state.
+             * 
+             * @return Option[(Word[A], List[(S, Word[A], Set[S], Set[(Symbol[A], S)])])]: An optional tuple containing:
+             *         - The word leading to an accepting state (if found).
+             *         - The updated list of remaining paths to explore.
+             *         Returns None if no accepting state is found.
+             */
             @annotation.tailrec
-            def heuristicHelper(paths: LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: LazyList[Word[A]]): LazyList[Word[A]] = paths match
-                case LazyList() => solution
+            def heuristicHelper(paths: LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])]): Option[(Word[A], LazyList[(S, Word[A], Set[S], Set[(Symbol[A], S)])])] = paths match
+                case LazyList() => None
                 case (currentState, word, visited, adjacent) #:: rest => 
- 
-                    if (isAccepted(currentState)) {println("found solution"); heuristicHelper(rest, word.reverse #:: solution)} // génère toutes les solutions
-                    // if (isAccepted(currentState)) {println("found solution");  word.reverse #:: solution} // pour une seule solution
+
+                    // we can also call if (heuristic(currentState) == 0) meaning that we have reached our goal
+                    if (isAccepted(currentState)) Some((word.reverse, rest)) // goal reached
                     else 
-                        if (adjacent.isEmpty)
-                            heuristicHelper(rest, solution)
+                        val nonVisitedAdjacents = adjacent.filterNot((symb, adjState) => visited.contains(adjState))
+
+                        if (nonVisitedAdjacents.isEmpty) heuristicHelper(rest) // no more transitions -> explore other paths
                         else 
-                            val newAdjacent = adjacent.filterNot((adjSymb, adjState) => visited.contains(adjState)) // exclure les etats visités
+                            // Get the adjacent state with the minimum heuristic cost
+                            val (newSymbol, newState) = nonVisitedAdjacents.minBy { case (symb, nextState) => heuristic(nextState) } 
 
-                            if (newAdjacent.isEmpty) heuristicHelper(rest, solution)
-                            else 
-                                val (newSymbol, newState) = newAdjacent.minBy { case (_, nextState) => heuristic(nextState) } // choisir l'etat avec le cout minimum
-                                val newPaths = (newState, newSymbol +: word, visited + newState, getAdjacentStates(newState)) #:: // ajouter un nouveau chemin
-                                ((currentState, word, visited, adjacent - ((newSymbol, newState))) #:: rest)
+                            heuristicHelper(
+                                            (newState, newSymbol +: word, visited + newState, getAdjacentStates(newState)) #::  // new state path
+                                            (currentState, word, visited, adjacent - ((newSymbol, newState))) #:: // last state path 
+                                             rest // other paths
+                                            )
+            // start exploring with the initial state
+            LazyList.unfold(LazyList((dfa.initialState, Seq.empty[Symbol[A]], Set(dfa.initialState), getAdjacentStates(dfa.initialState)))) { paths => heuristicHelper(paths)}
 
-                                heuristicHelper(newPaths, solution)
-
-            heuristicHelper(LazyList((dfa.initialState, Nil, Set(dfa.initialState), getAdjacentStates(dfa.initialState))), LazyList()) // appel initial
-
-/* 
- Explication de la fonction solve: elle prend 2 arguments :
-    1) stack: Une liste contenant le mot a construire a partir d'un etat, un ensemble d'états visités pour un chemin, et un ensemble d'états adjacents a partir d'un état.
-        Le stack sera utilisé pour stocker les chemins menant à une solution
-
-    2) solution: Une liste contenant tous les mots conduisant a un etat accepteur.
-
-    Algorithme:     
-        Cas de base: Le stack est vide -> Il n'y a plus aucun chemin à explorer, on retourne la liste des solutions
-        Cas de recursion: Le stack n'est pas vide -> il y a encore des chemins à explorer   (on prend le premier chemin du stack)
-
-                                                     Si aucun état adjacent est possible -> le chemin choisi est terminé, car aucune transition est possible, 
-                                                                                            on verifie si le mot construit dans ce chemin mène à un état accepteur (fonction accept)
-                                                                                            Oui? On ajoute ce mot dans la liste de solutions, et on continue la recherche avec le reste du stack (autres chemins)
-                                                                                            Non? On continue la recherche avec le reste du stack (autres chemins)
-                                                    
-                                                     Si présence d'états adjacents       -> On choisit un état adjacent, on vérifie si cet état a été visité 
-                                                                                            Si oui, on passe à l'etat adjacent suivant
-                                                                                            Si non, on ajoute un nouveau chemin partant de cet etat, et on continue la recherche (en mettant à jour l'ensemble des etats visités)
-                                                                    
-
-    On commence toujours par l'etat initial (dont on cosidere un état visité)
- */
+/** Note: Use of LazyList.unfold to generate a lazy sequence of solution paths:
+ *  unfold takes an initial paths state (here, a LazyList containing the initial DFA state, an empty word, 
+ *   the set of visited states, and its adjacent states) and a function that generates the next element 
+ *   and the new state from it.
+ * - At each step, heuristicHelper is called to explore paths. It either:
+ *     - Produces a valid word leading to an accepting state (and updates the remaining paths to explore),
+ *     - Or signals termination by returning `None` when no more solutions exist.
+ * - The resulting LazyList contains words (symbol sequences) leading to accepting states,
+ * computed on-demand as the LazyList is traversed.
+ * 
+ * Consulted References:
+ *          - https://livebook.manning.com/book/functional-programming-in-scala-second-edition/chapter-5/v-5/117
+ * 
+ *          - Manning Functional Programming in Scala, 2nd edition (taken from course)
+ *                    Part 1 - Section 5: Strictness and laziness -> Infinite streams and corecursion: unfold
+ */   

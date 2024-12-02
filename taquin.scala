@@ -170,6 +170,8 @@ object Taquin {
       */
     def main(args: Array[String]): Unit = {
         // Define the initial state of the puzzle.
+        // val initialState = TaquinState(List(2, 3, 6, 1, 0, 5, 7, 8, 4))
+        // val initialState = TaquinState(List(1, 2, 3, 4, 5, 6, 7, 0, 8))
         val initialState = TaquinState(List(0, 2, 1, 3))
         val dfa = new TaquinDFA(initialState)
 
