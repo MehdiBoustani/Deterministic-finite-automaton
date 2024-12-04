@@ -75,11 +75,11 @@ object ObjectDFA:
              * @return List[Word[A]]: a list of words leading to a solution
              */
             @annotation.tailrec
-            def solveHelper(path: List[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: List[Word[A]]): List[Word[A]] = path match 
+            def solveHelper(paths: List[(S, Word[A], Set[S], Set[(Symbol[A], S)])], solution: List[Word[A]]): List[Word[A]] = paths match 
                 case Nil => solution // All paths explored, return solutions
                 case (currentState, word, visited, adjacent) :: rest => 
                     
-                    // We can check if the word is accepted : efficiency: we have to recompute transitions, which is not too efficient
+                    // We can check if the word is accepted : efficiency: we have to recompute transitions, which is not that efficient
                     // reversedWord = word.reverse
                     // if (accept(reversedWord)) solveHelper(rest, reversedWord :: solution) // Add the accepted word to solution
 
@@ -90,6 +90,7 @@ object ObjectDFA:
                         val nonVisitedAdjacents = adjacent.filterNot((_, adjState) => visited.contains(adjState)) 
 
                         if (nonVisitedAdjacents.isEmpty) solveHelper(rest, solution) // no more transitions -> explore other paths
+                        
                         else 
                             // Explore the next transition
                             val (symbol, nextState) = nonVisitedAdjacents.head // take a valid adjacent for a new state
@@ -196,7 +197,7 @@ object ObjectDFA:
             LazyList.unfold(LazyList((dfa.initialState, Seq.empty[Symbol[A]], Set(dfa.initialState), getAdjacentStates(dfa.initialState)))) { paths => heuristicHelper(paths)}
 
 /** Note: Use of LazyList.unfold to generate a lazy sequence of solution paths:
- *  unfold takes an initial paths state (here, a LazyList containing the initial DFA state, an empty word, 
+ *  unfold takes an initial paths state (a LazyList containing the initial DFA state, an empty word, 
  *   the set of visited states, and its adjacent states) and a function that generates the next element 
  *   and the new state from it.
  * - At each step, heuristicHelper is called to explore paths. It either:
