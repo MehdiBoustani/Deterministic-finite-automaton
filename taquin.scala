@@ -207,15 +207,31 @@ object Taquin {
         println("lazy solve for [[2 3 6][1 _ 5][7 8 4]]: " + solutionsTaquin3.map(solution => solution.mkString))
 
 
-        /* Bonus: testing heuristics */
+         /* ---- Bonus: testing heuristics ---- */
 
-        //h1
-        val n_solutions = 70
+        val n_solutions = 200 
+        // h1
         val h1_solve = myTaquin3.heuristicSolve(myTaquin3.h1).take(n_solutions).toList 
         println("h1 solve result for [[2 3 6][1 _ 5][7 8 4]]: " + h1_solve.map(solution => solution.mkString))
 
-        //h2
+        // h2
         val h2_solve = myTaquin3.heuristicSolve(myTaquin3.h2).take(n_solutions).toList
-        println("h1 solve result for [[2 3 6][1 _ 5][7 8 4]]: " + h2_solve.map(solution => solution.mkString))
+        println("h2 solve result for [[2 3 6][1 _ 5][7 8 4]]: " + h2_solve.map(solution => solution.mkString))
+        
+        // compare heuristics
+
+        // h1
+        val h1_t1 = System.nanoTime()
+        val solve_h1 = myTaquin3.heuristicSolve(myTaquin3.h1)(n_solutions)
+        val h1_t2 = System.nanoTime()
+        val h1_timetaken = (h1_t2 - h1_t1) / 1e9
+        println(s"Time taken for h1 to find $n_solutions solutions: $h1_timetaken seconds")
+
+        // h2
+        val h2_t1 = System.nanoTime()
+        val solve_h2 = myTaquin3.heuristicSolve(myTaquin3.h2)(n_solutions)
+        val h2_t2 = System.nanoTime()
+        val h2_timetaken = (h2_t2 - h2_t1) / 1e9
+        println(s"Time taken for h2 to find $n_solutions solutions: $h2_timetaken seconds")
     }
 }
