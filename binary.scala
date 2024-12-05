@@ -54,11 +54,13 @@ object BinaryOddDFA:
         // Display the initial state (should be 'even', as no `1`s have been encountered yet).
         println(s"Initial state: ${dfa.initialState.name}")
 
-        // Solve the DFA by checking if specific binary strings are accepted or not.
+        // solve: always returns one solution: "1",  because no cycles and we start from even 
+        println(s"Solve result: ${dfa.solve().mkString}")  
+    
+        // Accept test for 10101011 and 10101010
         val testStrings = List("10101011", "10101010")
-        
         testStrings.foreach { testString =>
             // Print the result of accepting or rejecting each test string.
-            println(s"Result for '${testString}': ${dfa.accept(testString)}")
+            println(s"Accept test for '${testString}': ${dfa.accept(testString)}")
         }
     }

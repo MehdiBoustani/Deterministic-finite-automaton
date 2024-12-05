@@ -143,7 +143,13 @@ object Taquin {
                 currentTile != goalTile
             }.toDouble
         }
-
+        
+        /**
+         * Heuristic function h2: Computes the Manhattan distance for the Taquin puzzle.
+         * 
+         * @param state The current state of the puzzle.
+         * @return The sum of Manhattan distances for all tiles in the current state.
+         */
         def h2(state: TaquinState): Double = {
             val goalGrid = acceptingStates.head.grid
 
@@ -169,31 +175,33 @@ object Taquin {
       * The program initializes a puzzle state and computes all reachable states.
       */
     def main(args: Array[String]): Unit = {
-        // Define the initial state of the puzzle.
-        // val initialState = TaquinState(List(2, 3, 6, 1, 0, 5, 7, 8, 4))
-        // val initialState = TaquinState(List(1, 2, 3, 4, 5, 6, 7, 0, 8))
-        val initialState = TaquinState(List(0, 2, 1, 3))
-        val dfa = new TaquinDFA(initialState)
 
-        println(s"État initial :")
-        val size = calculateSize(initialState.grid)
-        println(initialState.grid.grouped(size).map(_.mkString(" ")).mkString("\n"))
+        // solve [[ _ 2][1 3]]
+        val initialState1 = TaquinState(List(0, 2, 1, 3))
+        val myTaquin1 = new TaquinDFA(initialState1)
+        val solutionsTaquin1 = myTaquin1.solve()
+        println("solve result for [[ _ 2][1 3]]: " + solutionsTaquin1.map(solution => solution.mkString))
 
-        // Solve the puzzle by finding all possible solutions.
-        val solutions = dfa.solve() 
+        // solve [[2 1][3 _]]
+        val initialState2 = TaquinState(List(2, 1, 3, 0))
+        val myTaquin2 = new TaquinDFA(initialState2)
+        val solutionsTaquin2 = myTaquin2.solve()
+        println("solve result for [[2 1][3 _]]: " + solutionsTaquin2.map(solution => solution.mkString))
 
-        println("Solutions trouvées :")
-        if (solutions.isEmpty) {
-            println("Aucune solution trouvée.")
-        } else {
-            solutions.foreach { solution =>
-                // Print each solution as a sequence of moves.
-                println(solution.mkString(" "))
-                
-                // Verify if the solution leads to the goal state.
-                val moveSequence = solution.mkString("")  // Convertir la solution en une chaîne de mouvements
-                println(s"Résultat pour ${moveSequence}: ${dfa.accept(moveSequence)}")
-            }
-        }
+        // accept dudr for [[ _ 2][1 3]]
+        val word = "dudr"
+        println(s"Accept test of '$word' for [[ _ 2][1 3]]: ${myTaquin1.accept(word)}")
+
+
+        // solve [[2 3 6][1 _ 5][7 8 4]]
+        // val initialState3 = TaquinState(List(2, 3, 6, 1, 0, 5, 7, 8, 4))
+        // val myTaquin3 = new TaquinDFA(initialState3)
+        // val solutionsTaquin3 = myTaquin3.solve()
+        // println("solve result for [[2 3 6][1 _ 5][7 8 4]]: " + solutionsTaquin2.map(solution => solution.mkString))
+
+
+        // bonus: heuristics
+        
+
     }
 }

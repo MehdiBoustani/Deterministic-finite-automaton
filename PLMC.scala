@@ -119,7 +119,12 @@ object PLMC:
             case 'c' => move(C)
             case _   => state // Invalid symbol -> stay in the same state
 
-    case class plmcDFA() extends DFA[State[Item], Char]:
+    /**
+      * Defining a DFA for plmc problem
+      *
+      * @param initState initial state (by default all the items are on the left side)
+      */
+    case class PlmcDFA(initState: State[Item] = s0) extends DFA[State[Item], Char]:
         override def states = Set(s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)
         override def alphabet = Set('p', 'l', 'm', 'c')
         override def initialState = s0
@@ -139,3 +144,24 @@ object PLMC:
             case true => 
                 val nextState = moveNext(state, symbol) 
                 if !isSink(nextState) then Some(nextState) else None
+
+
+    /**
+      * Main entry point of the application.
+      *
+      * @param args Command-line arguments (not used in this implementation).
+    */
+    def main(args: Array[String]): Unit = {
+
+        // define our DFA
+        val plmcDFA = PlmcDFA()
+        
+        // solve 
+        println("solve solutions: " + plmcDFA.solve().map(solution => solution.mkString))
+
+        // accept test for mpcmlcmlcmlpm and ppp
+        val testList = List("mpcmlcmlcmlpm", "ppp")
+        val results = testList.map(word => s"Accept test for '$word': ${plmcDFA.accept(word)}")
+        println(results.mkString("\n"))
+       
+    }
