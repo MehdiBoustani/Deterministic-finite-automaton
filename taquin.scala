@@ -180,28 +180,39 @@ object Taquin {
         val initialState1 = TaquinState(List(0, 2, 1, 3))
         val myTaquin1 = new TaquinDFA(initialState1)
         val solutionsTaquin1 = myTaquin1.solve()
-        println("solve result for [[ _ 2][1 3]]: " + solutionsTaquin1.map(solution => solution.mkString))
+        // print as list of strings
+        println("solve for [[ _ 2][1 3]]: " + solutionsTaquin1.map(solution => solution.mkString))
 
         // solve [[2 1][3 _]]
         val initialState2 = TaquinState(List(2, 1, 3, 0))
         val myTaquin2 = new TaquinDFA(initialState2)
         val solutionsTaquin2 = myTaquin2.solve()
-        println("solve result for [[2 1][3 _]]: " + solutionsTaquin2.map(solution => solution.mkString))
+        // print as list of strings
+        println("solve for [[2 1][3 _]]: " + solutionsTaquin2.map(solution => solution.mkString))
 
         // accept dudr for [[ _ 2][1 3]]
         val word = "dudr"
         println(s"Accept test of '$word' for [[ _ 2][1 3]]: ${myTaquin1.accept(word)}")
 
 
-        // solve [[2 3 6][1 _ 5][7 8 4]]
-        // val initialState3 = TaquinState(List(2, 3, 6, 1, 0, 5, 7, 8, 4))
-        // val myTaquin3 = new TaquinDFA(initialState3)
-        // val solutionsTaquin3 = myTaquin3.solve()
-        // println("solve result for [[2 3 6][1 _ 5][7 8 4]]: " + solutionsTaquin2.map(solution => solution.mkString))
+        // lazy solve [[2 3 6][1 _ 5][7 8 4]]
+        val initialState3 = TaquinState(List(2, 3, 6, 1, 0, 5, 7, 8, 4))
+        val myTaquin3 = new TaquinDFA(initialState3)
+        val n = 10
+        val solutionsTaquin3 = myTaquin3.lazysolve().take(n).toList // take first n solutions
+        // print as list of strings
+        println("lazy solve for [[2 3 6][1 _ 5][7 8 4]]: " + solutionsTaquin3.map(solution => solution.mkString))
 
 
-        // bonus: heuristics
-        
+        /* Bonus: testing heuristics */
+        // // h1
+        // val n_solutions = 70
+        // val h1_solve = myTaquin3.heuristicSolve(myTaquin3.h1).take(n_solutions).toList 
+        // println("h1 solve result for [[2 3 6][1 _ 5][7 8 4]]: " + h1_solve.map(solution => solution.mkString))
+
+        // // h2
+        // val h2_solve = myTaquin3.heuristicSolve(myTaquin3.h2).take(n_solutions).toList
+        // println("h1 solve result for [[2 3 6][1 _ 5][7 8 4]]: " + h2_solve.map(solution => solution.mkString))
 
     }
 }
