@@ -182,7 +182,8 @@ object Taquin {
         val solutionsTaquin1 = myTaquin1.solve()
 
         // print as list of strings
-        println("solve for [[ _ 2][1 3]]: " + solutionsTaquin1.map(solution => solution.mkString))
+        println("Solve for [[ _ 2][1 3]]: " + solutionsTaquin1.map(solution => solution.mkString))
+        println()
 
         // solve [[2 1][3 _]]
         val initialState2 = TaquinState(List(2, 1, 3, 0))
@@ -190,11 +191,13 @@ object Taquin {
         val solutionsTaquin2 = myTaquin2.solve()
 
         // print as list of strings
-        println("solve for [[2 1][3 _]]: " + solutionsTaquin2.map(solution => solution.mkString))
+        println("Solve for [[2 1][3 _]]: " + solutionsTaquin2.map(solution => solution.mkString))
+        println()
 
         // accept dudr for [[ _ 2][1 3]]
         val word = "dudr"
         println(s"Accept test of '$word' for [[ _ 2][1 3]]: ${myTaquin1.accept(word)}")
+        println()
 
 
         // lazy solve [[2 3 6][1 _ 5][7 8 4]]
@@ -204,19 +207,22 @@ object Taquin {
         val solutionsTaquin3 = myTaquin3.lazysolve().take(n).toList // take first n solutions
 
         // print as list of strings
-        println("lazy solve for [[2 3 6][1 _ 5][7 8 4]]: " + solutionsTaquin3.map(solution => solution.mkString))
+        println("Lazy solve for [[2 3 6][1 _ 5][7 8 4]]: " + solutionsTaquin3.map(solution => solution.mkString))
+        println()
 
 
          /* ---- Bonus: testing heuristics ---- */
 
-        val n_solutions = 200 
+        val n_solutions = 50
         // h1
         val h1_solve = myTaquin3.heuristicSolve(myTaquin3.h1).take(n_solutions).toList 
         println("h1 solve result for [[2 3 6][1 _ 5][7 8 4]]: " + h1_solve.map(solution => solution.mkString))
+        println()
 
         // h2
         val h2_solve = myTaquin3.heuristicSolve(myTaquin3.h2).take(n_solutions).toList
         println("h2 solve result for [[2 3 6][1 _ 5][7 8 4]]: " + h2_solve.map(solution => solution.mkString))
+        println()
         
         // compare heuristics
 
@@ -226,6 +232,7 @@ object Taquin {
         val h1_t2 = System.nanoTime()
         val h1_timetaken = (h1_t2 - h1_t1) / 1e9
         println(s"Time taken for h1 to find $n_solutions solutions: $h1_timetaken seconds")
+        println()
 
         // h2
         val h2_t1 = System.nanoTime()
@@ -233,5 +240,6 @@ object Taquin {
         val h2_t2 = System.nanoTime()
         val h2_timetaken = (h2_t2 - h2_t1) / 1e9
         println(s"Time taken for h2 to find $n_solutions solutions: $h2_timetaken seconds")
+        println()
     }
 }
